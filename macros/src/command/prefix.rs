@@ -39,7 +39,7 @@ fn quote_parameter(p: &super::CommandParameter) -> Result<proc_macro2::TokenStre
 
 pub fn generate_prefix_action(inv: &Invocation) -> Result<proc_macro2::TokenStream, syn::Error> {
     let param_idents = (0..inv.parameters.len())
-        .map(|i| format_ident!("poise_param_{i}"))
+        .map(|i| format_ident!("bert_core::__internal::poise_param_{i}"))
         .collect::<Vec<_>>();
     let param_specs = inv
         .parameters
@@ -53,11 +53,11 @@ pub fn generate_prefix_action(inv: &Invocation) -> Result<proc_macro2::TokenStre
 
     Ok(quote::quote! {
         |ctx| Box::pin(async move {
-            let ( #( #param_idents, )* .. ) = ::poise::parse_prefix_args!(
+            let ( #( #param_idents, )* .. ) = ::bert_core::bert_core::__internal::poise::parse_prefix_args!(
                 ctx.serenity_context, ctx.msg, ctx.args, 0 =>
                 #( #param_specs, )*
                 #wildcard_arg
-            ).await.map_err(|(error, input)| poise::FrameworkError::new_argument_parse(
+            ).await.map_err(|(error, input)| bert_core::__internal::poise::FrameworkError::new_argument_parse(
                 ctx.into(),
                 input,
                 error,
@@ -72,7 +72,7 @@ pub fn generate_prefix_action(inv: &Invocation) -> Result<proc_macro2::TokenStre
 
             inner(ctx.into(), #( #param_idents, )* )
                 .await
-                .map_err(|error| poise::FrameworkError::new_command(
+                .map_err(|error| bert_core::__internal::poise::FrameworkError::new_command(
                     ctx.into(),
                     error,
                 ))

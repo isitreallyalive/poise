@@ -33,22 +33,22 @@ pub fn generate_parameters(inv: &Invocation) -> Result<Vec<proc_macro2::TokenStr
         let autocomplete_callback = match &param.args.autocomplete {
             Some(autocomplete_fn) => {
                 quote::quote! { Some(|
-                    ctx: poise::ApplicationContext<'_, _, _>,
+                    ctx: bert_core::__internal::poise::ApplicationContext<'_, _, _>,
                     partial: &str,
                 | Box::pin(async move {
-                    use ::poise::futures_util::{Stream, StreamExt};
+                    use ::bert_core::bert_core::__internal::poise::futures_util::{Stream, StreamExt};
 
-                    let choices_stream = ::poise::into_stream!(
+                    let choices_stream = ::bert_core::bert_core::__internal::poise::into_stream!(
                         #autocomplete_fn(ctx.into(), partial).await
                     );
                     let choices_vec = choices_stream
                         .take(25)
                         // T or AutocompleteChoice<T> -> AutocompleteChoice<T>
-                        .map(poise::serenity_prelude::AutocompleteChoice::from)
+                        .map(bert_core::__internal::poise::serenity_prelude::AutocompleteChoice::from)
                         .collect()
                         .await;
 
-                    let mut response = poise::serenity_prelude::CreateAutocompleteResponse::default();
+                    let mut response = bert_core::__internal::poise::serenity_prelude::CreateAutocompleteResponse::default();
                     Ok(response.set_choices(choices_vec))
                 })) }
             }
@@ -56,7 +56,7 @@ pub fn generate_parameters(inv: &Invocation) -> Result<Vec<proc_macro2::TokenStr
         };
 
         // We can just cast to f64 here because Discord only uses f64 precision anyways
-        // TODO: move this to poise::CommandParameter::{min, max} fields
+        // TODO: move this to bert_core::__internal::poise::CommandParameter::{min, max} fields
         let min_value_setter = match &param.args.min {
             Some(x) => quote::quote! { .min_number_value(#x as f64) },
             None => quote::quote! {},
@@ -65,7 +65,7 @@ pub fn generate_parameters(inv: &Invocation) -> Result<Vec<proc_macro2::TokenStr
             Some(x) => quote::quote! { .max_number_value(#x as f64) },
             None => quote::quote! {},
         };
-        // TODO: move this to poise::CommandParameter::{min_length, max_length} fields
+        // TODO: move this to bert_core::__internal::poise::CommandParameter::{min_length, max_length} fields
         let min_length_setter = match &param.args.min_length {
             Some(x) => quote::quote! { .min_length(#x) },
             None => quote::quote! {},
@@ -77,10 +77,10 @@ pub fn generate_parameters(inv: &Invocation) -> Result<Vec<proc_macro2::TokenStr
         let type_setter = match inv.args.slash_command {
             true => {
                 if let Some(_choices) = &param.args.choices {
-                    quote::quote! { Some(|o| o.kind(::poise::serenity_prelude::CommandOptionType::Integer)) }
+                    quote::quote! { Some(|o| o.kind(::bert_core::bert_core::__internal::poise::serenity_prelude::CommandOptionType::Integer)) }
                 } else {
                     quote::quote! { Some(|o| {
-                        poise::create_slash_argument!(#type_, o)
+                        bert_core::__internal::poise::create_slash_argument!(#type_, o)
                         #min_value_setter #max_value_setter
                         #min_length_setter #max_length_setter
                     }) }
@@ -89,18 +89,18 @@ pub fn generate_parameters(inv: &Invocation) -> Result<Vec<proc_macro2::TokenStr
             false => quote::quote! { None },
         };
         // TODO: theoretically a problem that we don't store choices for non slash commands
-        // TODO: move this to poise::CommandParameter::choices (is there a reason not to?)
+        // TODO: move this to bert_core::__internal::poise::CommandParameter::choices (is there a reason not to?)
         let choices = match inv.args.slash_command {
             true => {
                 if let Some(choices) = &param.args.choices {
                     let choices = &choices.0;
-                    quote::quote! { vec![#( ::poise::CommandParameterChoice {
+                    quote::quote! { vec![#( ::bert_core::bert_core::__internal::poise::CommandParameterChoice {
                         name: ToString::to_string(&#choices),
                         localizations: Default::default(),
                         __non_exhaustive: (),
                     } ),*] }
                 } else {
-                    quote::quote! { poise::slash_argument_choices!(#type_) }
+                    quote::quote! { bert_core::__internal::poise::slash_argument_choices!(#type_) }
                 }
             }
             false => quote::quote! { vec![] },
@@ -108,14 +108,14 @@ pub fn generate_parameters(inv: &Invocation) -> Result<Vec<proc_macro2::TokenStr
 
         let channel_types = match &param.args.channel_types {
             Some(crate::util::List(channel_types)) => quote::quote! { Some(
-                vec![ #( poise::serenity_prelude::ChannelType::#channel_types ),* ]
+                vec![ #( bert_core::__internal::poise::serenity_prelude::ChannelType::#channel_types ),* ]
             ) },
             None => quote::quote! { None },
         };
 
         parameter_structs.push((
             quote::quote! {
-                ::poise::CommandParameter {
+                ::bert_core::bert_core::__internal::poise::CommandParameter {
                     name: #param_name.to_string(),
                     name_localizations: #name_localizations,
                     description: #description,
@@ -154,7 +154,7 @@ pub fn generate_slash_action(inv: &Invocation) -> Result<proc_macro2::TokenStrea
     }
 
     let param_identifiers = (0..inv.parameters.len())
-        .map(|i| format_ident!("poise_param_{i}"))
+        .map(|i| format_ident!("bert_core::__internal::poise_param_{i}"))
         .collect::<Vec<_>>();
     let param_names = inv.parameters.iter().map(|p| &p.name).collect::<Vec<_>>();
 
@@ -181,7 +181,7 @@ pub fn generate_slash_action(inv: &Invocation) -> Result<proc_macro2::TokenStrea
             // why clippy doesn't turn off this lint inside macros in the first place
             #[allow(clippy::needless_question_mark)]
 
-            let ( #( #param_identifiers, )* ) = ::poise::parse_slash_args!(
+            let ( #( #param_identifiers, )* ) = ::bert_core::__internal::poise::parse_slash_args!(
                 ctx.serenity_context, ctx.interaction, ctx.args =>
                 #( (#param_names: #param_types), )*
             ).await.map_err(|error| error.to_framework_error(ctx))?;
@@ -195,7 +195,7 @@ pub fn generate_slash_action(inv: &Invocation) -> Result<proc_macro2::TokenStrea
 
             inner(ctx.into(), #( #param_identifiers, )*)
                 .await
-                .map_err(|error| poise::FrameworkError::new_command(
+                .map_err(|error| bert_core::__internal::poise::FrameworkError::new_command(
                     ctx.into(),
                     error,
                 ))
@@ -217,7 +217,7 @@ pub fn generate_context_menu_action(
     };
 
     Ok(quote::quote! {
-        <#param_type as ::poise::ContextMenuParameter<_, _>>::to_action(|ctx, value| {
+        <#param_type as ::bert_core::bert_core::__internal::poise::ContextMenuParameter<_, _>>::to_action(|ctx, value| {
             Box::pin(async move {
                 let is_framework_cooldown = !ctx.command.manual_cooldowns
                     .unwrap_or_else(|| ctx.framework.options.manual_cooldowns);
@@ -228,7 +228,7 @@ pub fn generate_context_menu_action(
 
                 inner(ctx.into(), value)
                     .await
-                    .map_err(|error| poise::FrameworkError::new_command(
+                    .map_err(|error| bert_core::__internal::poise::FrameworkError::new_command(
                         ctx.into(),
                         error,
                     ))

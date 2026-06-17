@@ -214,9 +214,11 @@ pub fn command(
         match perms {
             Some(perms) => {
                 let perms = perms.iter();
-                syn::parse_quote! { #(poise::serenity_prelude::Permissions::#perms)|* }
+                syn::parse_quote! { #(bert_core::__internal::poise::serenity_prelude::Permissions::#perms)|* }
             }
-            None => syn::parse_quote! { poise::serenity_prelude::Permissions::empty() },
+            None => {
+                syn::parse_quote! { bert_core::__internal::poise::serenity_prelude::Permissions::empty() }
+            }
         }
     }
     let default_member_permissions = permissions_to_tokens(&args.default_member_permissions);
@@ -225,14 +227,14 @@ pub fn command(
 
     let install_context = if let Some(contexts) = &args.install_context {
         let contexts = contexts.iter();
-        syn::parse_quote! { Some(vec![ #(poise::serenity_prelude::InstallationContext::#contexts),* ]) }
+        syn::parse_quote! { Some(vec![ #(bert_core::__internal::poise::serenity_prelude::InstallationContext::#contexts),* ]) }
     } else {
         syn::parse_quote! { None }
     };
 
     let interaction_context = if let Some(contexts) = &args.interaction_context {
         let contexts = contexts.iter();
-        syn::parse_quote! { Some(vec![ #(poise::serenity_prelude::InteractionContext::#contexts),* ]) }
+        syn::parse_quote! { Some(vec![ #(bert_core::__internal::poise::serenity_prelude::InteractionContext::#contexts),* ]) }
     } else {
         syn::parse_quote! { None }
     };
@@ -359,13 +361,13 @@ fn generate_command(mut inv: Invocation) -> Result<proc_macro2::TokenStream, dar
 
     Ok(quote::quote! {
         #[allow(clippy::str_to_string)]
-        #function_visibility fn #function_ident #function_generics() -> ::poise::Command<
-            <#ctx_type_with_static as poise::_GetGenerics>::U,
-            <#ctx_type_with_static as poise::_GetGenerics>::E,
+        #function_visibility fn #function_ident #function_generics() -> ::bert_core::__internal::poise::Command<
+            <#ctx_type_with_static as bert_core::__internal::poise::_GetGenerics>::U,
+            <#ctx_type_with_static as bert_core::__internal::poise::_GetGenerics>::E,
         > {
             #function
 
-            ::poise::Command {
+            ::bert_core::__internal::poise::Command {
                 prefix_action: #prefix_action,
                 slash_action: #slash_action,
                 context_menu_action: #context_menu_action,
@@ -383,7 +385,7 @@ fn generate_command(mut inv: Invocation) -> Result<proc_macro2::TokenStream, dar
                 help_text: #help_text,
                 hide_in_help: #hide_in_help,
                 manual_cooldowns: #manual_cooldowns,
-                cooldowns: std::sync::Mutex::new(::poise::Cooldowns::new()),
+                cooldowns: std::sync::Mutex::new(::bert_core::__internal::poise::Cooldowns::new()),
                 cooldown_config: #cooldown_config,
                 reuse_response: #reuse_response,
                 default_member_permissions: #default_member_permissions,
@@ -436,7 +438,7 @@ fn generate_cooldown_config(args: &CommandArgs) -> proc_macro2::TokenStream {
     let member_cooldown = wrap_option_and_map(args.member_cooldown, &to_seconds_path);
 
     quote::quote!(
-        std::sync::RwLock::new(::poise::CooldownConfig {
+        std::sync::RwLock::new(::bert_core::__internal::poise::CooldownConfig {
             global: #global_cooldown,
             user: #user_cooldown,
             guild: #guild_cooldown,
